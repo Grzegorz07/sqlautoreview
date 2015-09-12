@@ -28,12 +28,12 @@ import org.apache.log4j.Logger;
 
 
 /*
- * function:¹¹½¨MySQL database,table,columns,indexµÄÔªÊı¾İ
+ * function:Budowanie bazy danych MySQL database,table,columns,index METADATA
  * author:danchen
  * create time:2011/10/31
  */
 public class MySQLMetaData implements IMetaData{
-	//log4jÈÕÖ¾
+	//log4j
 	private static Logger logger = Logger.getLogger(MySQLMetaData.class);
 	
 	String IP;
@@ -42,11 +42,11 @@ public class MySQLMetaData implements IMetaData{
 	String user;
 	String password;
 	Connection conn;
-	//Ö÷ÒªÓÃÓÚ²éÕÒµÄ
+	//GÅ‚Ã³wnie uÅ¼ywane, aby znaleÅºÄ‡
 	HashMap<String,List<Index_Node>> hash_index;
     HashMap<String,List<Column_Node>> hash_column;
 	
-	//¹¹Ôìº¯Êı
+	//konstruktor
 	public MySQLMetaData(String IP,int port,String dbname,String user,String password)
 	{
 		
@@ -60,7 +60,7 @@ public class MySQLMetaData implements IMetaData{
 		this.conn = getConnection();
 	}
 	
-	//¹¹Ôìº¯Êı
+	//konstruktor
 	public MySQLMetaData()
 	{
 		HandleXMLConf productdbConfig = new HandleXMLConf("productdb.xml");
@@ -74,7 +74,7 @@ public class MySQLMetaData implements IMetaData{
 		this.conn = getConnection();
 	}
 
-	//»ñµÃÊı¾İ¿âÁ¬½Ó
+	//Uzyskaj poÅ‚Ä…czenie z bazÄ… danych
     public Connection getConnection()
     {
  	   String JDriver = "com.mysql.jdbc.Driver";
@@ -83,7 +83,7 @@ public class MySQLMetaData implements IMetaData{
             Class.forName(JDriver);
         }
         catch(ClassNotFoundException cnf_e) {  
-        	// Èç¹ûÕÒ²»µ½Çı¶¯Àà
+        	// JeÅ›li nie moÅ¼esz znaleÅºÄ‡ sterownika
         	logger.error("Driver Not Found: ", cnf_e);
         }
 
@@ -93,12 +93,12 @@ public class MySQLMetaData implements IMetaData{
         }
         catch(SQLException se)
         {
-           logger.error("ÎŞ·¨´´½¨µ½Êı¾İ¿âµÄÁ¬½Ó", se);
+           logger.error("Nie moÅ¼na utworzyÄ‡ poÅ‚Ä…czenia z bazÄ… danych", se);
      	   return null;
         } 
     }
     
-    //¼ì²éÁ¬½ÓµÄÓĞĞ§ĞÔ
+    //Sprawdz polaczenie
    	public boolean checkConnection() 
     {
    		if(this.conn==null){
@@ -108,21 +108,21 @@ public class MySQLMetaData implements IMetaData{
 		}	
    	}
    	
-   	//Ö÷¶¯¹Ø±ÕÊı¾İ¿âÁ¬½Ó
+   	//Zamknij polaczenie
    	public boolean closeConnection()
    	{
    		try {
 			this.conn.close();
 		} catch (SQLException e) {
-			logger.warn("¹Ø±ÕÊı¾İ¿âÁ¬½Ó³öÏÖÎÊÌâ:",e);
+			logger.warn("å…³é—­æ•°æ®åº“è¿æ¥å‡ºç°é—®é¢˜:",e);
 		}
    		return true;
    	}
    	
-    //¹¹Ôìµ¥¸ö±íµÄindexÔªÊı¾İ
+    //Metadane GÅ‚Ã³wna skonstruowaÄ‡ jednÄ… tabelÄ™
     public List<Index_Node> buildIndexMetaData(String tablename)
     {
-    	//»ñÈ¡index information
+    	//è·å–index information
     	try
     	{
     	   String command="select TABLE_SCHEMA,TABLE_NAME,NON_UNIQUE,INDEX_SCHEMA,INDEX_NAME,SEQ_IN_INDEX,COLUMN_NAME,CARDINALITY,INDEX_TYPE from information_schema.STATISTICS where table_name='"+tablename+"'"+" and TABLE_SCHEMA='"+this.dbname+"';";
@@ -131,7 +131,7 @@ public class MySQLMetaData implements IMetaData{
 	       stmt.execute(command);
 	       ResultSet rs = stmt.getResultSet();
 	       
-	       //ListÖ»ÊÇÒ»¸ö½Ó¿Ú,LinkedList²ÅÊÇÒ»¸ö¾ßÌåµÄÊµÏÖ
+	       //Liståªæ˜¯ä¸€ä¸ªæ¥å£,LinkedListæ‰æ˜¯ä¸€ä¸ªå…·ä½“çš„å®ç°
 	       List<Index_Node> list_index = new LinkedList<Index_Node>();
 	       while(rs.next())
 	       {
@@ -159,16 +159,16 @@ public class MySQLMetaData implements IMetaData{
         }
     }
     
-    //¹¹Ôìµ¥¸ö±íµÄcolumnÔªÊı¾İ
+    //æ„é€ å•ä¸ªè¡¨çš„columnå…ƒæ•°æ®
     public List<Column_Node> buildColumnMetaData(String tablename)
     {
     	String command;
     	String all_col_names="";
     	String all_dis_col_names="";
-    	//²éÑ¯ËùÓĞµÄÁĞÃû,ÒÔ¼°¸÷ÁĞÃûµÄdata type
+    	//æŸ¥è¯¢æ‰€æœ‰çš„åˆ—å,ä»¥åŠå„åˆ—åçš„data type
     	try
     	{
-    		//information_schema.COLUMNSÕâ¸öÊÓÍ¼´æÔÚbug,»áÓĞÏàÍ¬µÄÁĞÃû³öÏÖ,5.0,5.1¶¼´æÔÚÕâ¸öÎÊÌâ,¼ÓÉÏÒ»¸ögroup byÀ´È¥ÖØ
+    		//information_schema.COLUMNSè¿™ä¸ªè§†å›¾å­˜åœ¨bug,ä¼šæœ‰ç›¸åŒçš„åˆ—åå‡ºç°,5.0,5.1éƒ½å­˜åœ¨è¿™ä¸ªé—®é¢˜,åŠ ä¸Šä¸€ä¸ªgroup byæ¥å»é‡
     		command="select COLUMN_NAME,DATA_TYPE,IS_NULLABLE,COLUMN_TYPE from information_schema.COLUMNS where table_name='"+tablename+"'"+" and TABLE_SCHEMA='"+this.dbname+"' ";
     		command=command+"group by COLUMN_NAME order by ORDINAL_POSITION;";
     		Statement stmt = conn.createStatement();
@@ -186,7 +186,7 @@ public class MySQLMetaData implements IMetaData{
  	        	cn.sample_card = 0;
  	        	list_column.add(cn);
  	        	
- 	        	//Æ´½ÓËùÓĞµÄÁĞÃû
+ 	        	//æ‹¼æ¥æ‰€æœ‰çš„åˆ—å
  	        	all_col_names=all_col_names+","+cn.column_name;
  	        	all_dis_col_names=all_dis_col_names+",count(distinct("+cn.column_name+"))";
  	        }
@@ -199,7 +199,7 @@ public class MySQLMetaData implements IMetaData{
  	        	return null;
  	        }
  	        
- 	       //³éÑù·ÖÎöÊı¾İ,Ä¬ÈÏ²ÉÑù10000Ìõ
+ 	       //æŠ½æ ·åˆ†ææ•°æ®,é»˜è®¤é‡‡æ ·10000æ¡
  	        String col;
  	        command="select "+all_dis_col_names.substring(1)+" from ";
  	        command=command+"(select "+all_col_names.substring(1)+" from "+tablename+" limit 10000) aa;";
@@ -209,7 +209,7 @@ public class MySQLMetaData implements IMetaData{
 	        ResultSet rs2 = stmt2.getResultSet();
 	        while(rs2.next())
 	        {
-	        	//Ö»ÓĞÒ»Ìõ¼ÇÂ¼,ËùÒÔÖ»»áÑ­»·Ò»´Î
+	        	//åªæœ‰ä¸€æ¡è®°å½•,æ‰€ä»¥åªä¼šå¾ªç¯ä¸€æ¬¡
 	        	for(int i=0;i<list_column.size();i++)
 	        	{
 	        	   col="count(distinct("+list_column.get(i).column_name+"))";
@@ -230,7 +230,7 @@ public class MySQLMetaData implements IMetaData{
          }
     }
     
-    //¹¹ÔìÒ»¸ö±íËùĞèµÄÔªÊı¾İcolumn+index of one table
+    //æ„é€ ä¸€ä¸ªè¡¨æ‰€éœ€çš„å…ƒæ•°æ®column+index of one table
     public void buildTableMetaData(String tablename)
     {
     	String real_tablename=findMatchTable(tablename);
@@ -238,20 +238,20 @@ public class MySQLMetaData implements IMetaData{
     		logger.warn("table doesn't exist.");
     		return;
     	}else if(real_tablename.equals(tablename)){
-    		//¹¹ÔìË÷ÒıÊı¾İ
+    		//æ„é€ ç´¢å¼•æ•°æ®
         	hash_index.put(tablename,buildIndexMetaData(tablename));
-        	//¹¹ÔìÁĞÊı¾İ
+        	//æ„é€ åˆ—æ•°æ®
         	hash_column.put(tablename, buildColumnMetaData(tablename));
     	}else{
-    		//¹¹ÔìË÷ÒıÊı¾İ
+    		//æ„é€ ç´¢å¼•æ•°æ®
         	hash_index.put(tablename,buildIndexMetaData(real_tablename));
-        	//¹¹ÔìÁĞÊı¾İ
+        	//æ„é€ åˆ—æ•°æ®
         	hash_column.put(tablename, buildColumnMetaData(real_tablename));
     	}
     	
     }
     
-    //¹¹ÔìÕâ¸ö¿âËùÓĞ±íµÄÔªÊı¾İ
+    //æ„é€ è¿™ä¸ªåº“æ‰€æœ‰è¡¨çš„å…ƒæ•°æ®
     public void buildDBMetaData()
     {
     	String command;
@@ -276,11 +276,11 @@ public class MySQLMetaData implements IMetaData{
     	 
     }
     
-    //¸ù¾İ±íÃû,ÁĞÃû,»ñµÃÖ¸¶¨ÁĞµÄÔªÊı¾İ
+    //æ ¹æ®è¡¨å,åˆ—å,è·å¾—æŒ‡å®šåˆ—çš„å…ƒæ•°æ®
     public Column_Node searchColumnMetaData(String tablename,
     		                               String column_name)
     {
-    	//»ñµÃÕâ¸ö±íµÄcolumnÁĞ±í
+    	//è·å¾—è¿™ä¸ªè¡¨çš„columnåˆ—è¡¨
     	List<Column_Node> list_column=hash_column.get(tablename);
     	Column_Node cn;
     	for(Iterator<Column_Node> r=list_column.iterator();r.hasNext();)
@@ -288,7 +288,7 @@ public class MySQLMetaData implements IMetaData{
     		cn = r.next();
     		if(cn.column_name.equals(column_name)==true)
     		{
-    			//ÕÒµ½Õâ¸öcolumn,Ö±½Ó·µ»Ø
+    			//æ‰¾åˆ°è¿™ä¸ªcolumn,ç›´æ¥è¿”å›
     			return cn;
     		}
     	}
@@ -296,10 +296,10 @@ public class MySQLMetaData implements IMetaData{
     	return null;
     }
     
-    //¸ù¾İ±íÃû,ÁĞÃû»ñµÃÖ¸¶¨ÁĞÉÏ´æÔÚµÄË÷ÒıµÄÔªÊı¾İ,Ò»¸öÁĞ¿ÉÄÜÒÑ´æÔÚÓÚ¶à¸öË÷Òıµ±ÖĞ,ËùÒÔ·µ»ØµÄÊÇÒ»¸öList
+    //æ ¹æ®è¡¨å,åˆ—åè·å¾—æŒ‡å®šåˆ—ä¸Šå­˜åœ¨çš„ç´¢å¼•çš„å…ƒæ•°æ®,ä¸€ä¸ªåˆ—å¯èƒ½å·²å­˜åœ¨äºå¤šä¸ªç´¢å¼•å½“ä¸­,æ‰€ä»¥è¿”å›çš„æ˜¯ä¸€ä¸ªList
     public List<Index_Node> searchIndexMetaData(String tablename,String column_name)
     {
-    	//»ñµÃÕâ¸ö±íµÄËùÓĞµÄindexÁĞ±í
+    	//è·å¾—è¿™ä¸ªè¡¨çš„æ‰€æœ‰çš„indexåˆ—è¡¨
     	List<Index_Node> list_index=hash_index.get(tablename);
     	List<Index_Node> list_column_index = new LinkedList<Index_Node>();
     	Index_Node in;
@@ -314,10 +314,10 @@ public class MySQLMetaData implements IMetaData{
     	return list_column_index;
     }
     
-    //¼ì²é±íÃûÔÚÔªÊı¾İÖĞÊÇ·ñ´æÔÚ
+    //æ£€æŸ¥è¡¨ååœ¨å…ƒæ•°æ®ä¸­æ˜¯å¦å­˜åœ¨
     public boolean checkTableExist(String tablename)
     {
-    	//»ñµÃÕâ¸ö±íµÄcolumnÁĞ±í
+    	//è·å¾—è¿™ä¸ªè¡¨çš„columnåˆ—è¡¨
     	List<Column_Node> list_column=hash_column.get(tablename);
     	if(list_column == null) {
     		return false;
@@ -330,18 +330,18 @@ public class MySQLMetaData implements IMetaData{
     }
     
     /*
-     * ¼ì²é±íÃûÔÚÒµÎñÊı¾İ¿âÖĞÊÇ·ñ´æÔÚ,ÓĞ¿ÉÄÜ·Ö¿â·Ö±í,¸ñÊ½tablename_XXXX
-     * Ê¹ÓÃÁËTDDL£¬ºÜÓĞ¿ÉÄÜ»áÅöÉÏÕâÑùµÄtablename
-     * ÕâĞ©tablename´æÔÚSQLMAPÖĞ£¬ĞèÒª×ª»¯ºó²ÅÄÜÊ¹ÓÃ
-     * Èç¹ûÊµ¼ÊµÄ±íÃû,ÓëSQLÖĞµÄ±íÃû²»Ò»ÖÂ,ĞèÒªÈÃÉÏ²ãÖªµÀ
+     * æ£€æŸ¥è¡¨ååœ¨ä¸šåŠ¡æ•°æ®åº“ä¸­æ˜¯å¦å­˜åœ¨,æœ‰å¯èƒ½åˆ†åº“åˆ†è¡¨,æ ¼å¼tablename_XXXX
+     * ä½¿ç”¨äº†TDDLï¼Œå¾ˆæœ‰å¯èƒ½ä¼šç¢°ä¸Šè¿™æ ·çš„tablename
+     * è¿™äº›tablenameå­˜åœ¨SQLMAPä¸­ï¼Œéœ€è¦è½¬åŒ–åæ‰èƒ½ä½¿ç”¨
+     * å¦‚æœå®é™…çš„è¡¨å,ä¸SQLä¸­çš„è¡¨åä¸ä¸€è‡´,éœ€è¦è®©ä¸Šå±‚çŸ¥é“
      */
     public String findMatchTable(String tablename)
     {
     	String command;
     	String tmp_tablename;
-    	//´æ·ÅÕâ¸ö¿âÀïÆ¥Åätablename_xxxx·Ö¿â·Ö±íµÄ±íÃû
+    	//å­˜æ”¾è¿™ä¸ªåº“é‡ŒåŒ¹é…tablename_xxxxåˆ†åº“åˆ†è¡¨çš„è¡¨å
     	List<String> list_tablename=new LinkedList<String>();;
-    	//is_find 0:ÕÒµ½ÏàÍ¬µÄ±íÃû 1:·Ö¿â·Ö±í 2:Ã»ÓĞÕÒµ½±íÃû
+    	//is_find 0:æ‰¾åˆ°ç›¸åŒçš„è¡¨å 1:åˆ†åº“åˆ†è¡¨ 2:æ²¡æœ‰æ‰¾åˆ°è¡¨å
     	int is_find=-1;
     	command="select table_name from information_schema.tables where table_schema='"+dbname+"' and table_name='"+tablename+"';";
     	try
@@ -357,7 +357,7 @@ public class MySQLMetaData implements IMetaData{
 	    	   command="select table_name from information_schema.tables where table_schema='"+dbname+"' and table_name like '"+tablename+"_%';";
 	    	   stmt.execute(command);
 	    	   ResultSet tmp_rs=stmt.getResultSet();
-	    	   //ÕıÔò±í´ïÊ½http://developer.51cto.com/art/200902/110238.htm
+	    	   //æ­£åˆ™è¡¨è¾¾å¼http://developer.51cto.com/art/200902/110238.htm
 	    	   Pattern pattern = Pattern.compile("^"+tablename+"_[0-9]+$");
 	    	   while(tmp_rs.next()){
 	    		   tmp_tablename=tmp_rs.getString("table_name");
@@ -382,7 +382,7 @@ public class MySQLMetaData implements IMetaData{
       	   logger.error("",e);
          }
     	 
-    	 //·µ»ØÖµ
+    	 //è¿”å›å€¼
     	 if(is_find==0){
     		 return tablename;
     	 }else if(is_find==1){
@@ -393,19 +393,19 @@ public class MySQLMetaData implements IMetaData{
     }
     
     /*
-     * ÕÒ³ö×îºÏÊÊ¼ÆËãmeta dataµÄ·Ö±í
+     * æ‰¾å‡ºæœ€åˆé€‚è®¡ç®—meta dataçš„åˆ†è¡¨
      */
     private String findBestTableName(List<String> list_tablename) {
     	String bestTableName="";
-    	//ÏÈ¶¨ÒåÒ»¸ö±È½Ï´óµÄÖµ,·Ö±í²»»áÈ¡ÕâÃ´´óµÄÏÂ±ê
+    	//å…ˆå®šä¹‰ä¸€ä¸ªæ¯”è¾ƒå¤§çš„å€¼,åˆ†è¡¨ä¸ä¼šå–è¿™ä¹ˆå¤§çš„ä¸‹æ ‡
     	int table_min_index=100000000;
     	String tmp_tablename;
-    	//´«Èë²ÎÊı°²È«¼ì²é
+    	//ä¼ å…¥å‚æ•°å®‰å…¨æ£€æŸ¥
     	if(list_tablename==null || list_tablename.size()==0){
     		logger.warn("empty list_tablename parameter.");
     		return null;
     	}
-    	//È¡³öËùÓĞ·Ö±íµÄÏÂ±ê,·µ»Ø×îĞ¡µÄÏÂ±êµÄ±íÃû
+    	//å–å‡ºæ‰€æœ‰åˆ†è¡¨çš„ä¸‹æ ‡,è¿”å›æœ€å°çš„ä¸‹æ ‡çš„è¡¨å
     	Pattern pattern = Pattern.compile("[0-9]+$");
     	String matchString;
     	for(Iterator<String> iterator=list_tablename.iterator();iterator.hasNext();){
@@ -423,7 +423,7 @@ public class MySQLMetaData implements IMetaData{
 		return bestTableName;
 	}
     
-    //·µ»ØÒ»¸ö±íµÄÈ¥ÖØºÏºóµÄË÷ÒıÃû
+    //è¿”å›ä¸€ä¸ªè¡¨çš„å»é‡åˆåçš„ç´¢å¼•å
     private String getIndexNameByTable(String tablename)
     {
     	String returnStr="";
@@ -451,7 +451,7 @@ public class MySQLMetaData implements IMetaData{
 		return returnStr;
     }
     
-    //»ñµÃÒ»¸öË÷ÒıµÄË÷Òı×Ö¶ÎÃû
+    //è·å¾—ä¸€ä¸ªç´¢å¼•çš„ç´¢å¼•å­—æ®µå
     private String getIndexedCol(String tablename,String index_name)
     {
     	String index="";
@@ -479,8 +479,8 @@ public class MySQLMetaData implements IMetaData{
 		return index;
     }
     
-    //»ñµÃÕâ¸ö±íÉÏµÄË÷Òı,ÎªÇ°¶ËÊ¹ÓÃ
-    //Å¼¶ûµ¥´Îµ÷ÓÃËùÊ¹ÓÃ,Ã¿´ÎÖ´ĞĞÍê,¾Í¹Ø±ÕÁ¬½Ó
+    //è·å¾—è¿™ä¸ªè¡¨ä¸Šçš„ç´¢å¼•,ä¸ºå‰ç«¯ä½¿ç”¨
+    //å¶å°”å•æ¬¡è°ƒç”¨æ‰€ä½¿ç”¨,æ¯æ¬¡æ‰§è¡Œå®Œ,å°±å…³é—­è¿æ¥
 	public String getIndexesByTableName(String tablenames) {
 		try {
 			if(conn.isClosed()){
@@ -513,14 +513,14 @@ public class MySQLMetaData implements IMetaData{
 		}
 		logger.debug(returnStr);
 		if(closeConnection()==false){
-			logger.warn("Á¬½Ó¹Ø±ÕÊ§°Ü");
+			logger.warn("è¿æ¥å…³é—­å¤±è´¥");
 		}
 		return returnStr;
 	}
     
 	/*
-	 * ²»¹Ø±ÕÁ¬½Ó,»ñÈ¡Ò»¸ö±íµÄËùÓĞË÷Òı
-	 * ºóÌ¨Merge indexËùÓÃ
+	 * ä¸å…³é—­è¿æ¥,è·å–ä¸€ä¸ªè¡¨çš„æ‰€æœ‰ç´¢å¼•
+	 * åå°Merge indexæ‰€ç”¨
 	 */
 	public String getIndexesByTableName2(String tablenames) 
 	{
@@ -552,9 +552,9 @@ public class MySQLMetaData implements IMetaData{
     //print table metadata
     public void printTableMetaData(String tablename)
     {
-    	//»ñµÃÕâ¸ö±íµÄindexÁĞ±í
+    	//è·å¾—è¿™ä¸ªè¡¨çš„indexåˆ—è¡¨
     	List<Index_Node> list_index=hash_index.get(tablename);
-    	//»ñµÃÕâ¸ö±íµÄcolumnÁĞ±í
+    	//è·å¾—è¿™ä¸ªè¡¨çš„columnåˆ—è¡¨
     	List<Column_Node> list_column=hash_column.get(tablename);
     	
     	System.out.println("Table:"+tablename+" meta data information as follows:");
